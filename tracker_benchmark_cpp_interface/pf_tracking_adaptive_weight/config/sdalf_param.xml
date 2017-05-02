@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<opencv_storage>
+  <img_param>
+    <SUBfac> 1 </SUBfac>
+  </img_param>
+  <sym_var>
+    <val> 4 </val>
+    <alpha> 0.5 </alpha>
+  </sym_var>
+  <hsv>
+    <NBINS> 32 32 8 </NBINS>
+  </hsv>
+  <MSCR>
+    <min_margin> 0.003 </min_margin>
+    <ainc> 1.05 </ainc>
+    <min_size> 15 </min_size>
+    <filter_size> 3 </filter_size>
+    <verbosefl> 0 </verbosefl>
+  </MSCR>
+  <dynMSCR>
+    <kmin> 1 </kmin>
+    <kmax> 5 </kmax>
+    <regularize> 1 </regularize>
+    <th> 0.01 </th>
+    <covoption> 1 </covoption>
+  </dynMSCR>
+  <Match>
+    <pyy> 0.4 </pyy>
+    <pcc> 0.6 </pcc>
+    <pee> 0.5 </pee>
+  </Match>
+  <tex_patch>
+    <N> 30 </N>
+    <fac> 0 0 12 10 10 8 </fac>
+    <var> 3 </var>
+    <NTrans> 20 </NTrans>
+    <DIM_OP> 35 35 </DIM_OP>
+    <Thresh_entr> 13 </Thresh_entr>
+    <Thresh_CC> 0.4 </Thresh_CC>
+  </tex_patch>
+  <user_choice>
+    <maskon> 0 </maskon>
+    <dethead> 0 </dethead>
+  </user_choice>
+  <save_match> 0 </save_match>
+  <probe_need_imgs> 30 </probe_need_imgs>
+  <distance_thresh> 0.25 </distance_thresh>
+</opencv_storage>
