@@ -1,3 +1,10 @@
+/// @file pf_pedestrian_tracking_main.cpp
+/// @brief 由随机游走(RW)和特征点跟踪(FPT)生成的粒子数目比例自始至终保持不变
+/// @author 王文
+/// @version 8.0
+/// @date 2017-9-27
+
+
 //-p 100 -l 0.6 -w 0.7 -y 20 -s 5 -e 0.6 --rw_ratio 0.5 --binL 32 --binU 32 --binV 16 --binHOG 12 --cur_probe 1 --seq_path D:\data_seq\David3 --seq_name David3 --start_frame 1 --end_frame 252 --nz 4 --ext jpg --initx 83 --inity 200 --initw 35 --inith 131		increase weight of pedestrian detection
 //-p 100 -l 0.6 -w 0.8 -y 20 -s 5 -e 0.6 --rw_ratio 0.9 --binL 32 --binU 32 --binV 16 --binHOG 12 --cur_probe 1 --seq_path D:\data_seq\Human2 --seq_name Human2 --start_frame 1 --end_frame 1128 --nz 4 --ext jpg --initx 198 --inity 249 --initw 95 --inith 325
 //-p 100 -l 0.6 -w 0.8 -y 10 -s 5 -e 0.6 --rw_ratio 0.5 --binL 32 --binU 32 --binV 16 --binHOG 12 --cur_probe 1 --seq_path D:\data_seq\Human8 --seq_name Human8 --start_frame 1 --end_frame 128 --nz 4 --ext jpg --initx 110 --inity 101 --initw 30 --inith 91
@@ -21,6 +28,38 @@
 using namespace boost::program_options;
 using namespace std;
 
+/// @brief 版本8.0的主函数\n
+/// 传入参数如下：\n
+/// -h, --help 帮助\n
+/// -p, --particles [int(52)] 粒子数量，默认52，实验过程中指定100比较好\n
+/// -o, --optical_flow [bool] 忽略\n
+/// -u, --update_online [bool] 忽略\n
+/// -l, --learning_rate [double(0.4)] 学习率，论文中的1-gamma\n
+/// -x, --sigma_x [double(20)] x方向上的标准差，不建议改动\n
+/// -y, --sigma_y [double(10)] y方向上的标准差，不建议改动\n
+/// -s, --sigma_s [double(5)] 粒子宽度的方差，不建议改动\n
+/// -e, --exp_coeff_re_id [double(0.5)] 忽略\n
+/// -w, --re-id_weight [double(0.8)] 观测模型中target-specific的权重，即论文中的参数beta\n
+/// -d, --hog_particle_expand [double(1.4)] 观测模型中class-specific粒子扩大的比例\n
+/// -t, --thread_num [int(4)] 用到的线程数\n
+/// -r, --aspect_ratio [double(0.43)] 粒子的宽高比，不建议改动\n
+///--seq_path [string] 视频序列所在的目录\n
+///--seq_name [string] 视频序列的名字\n
+///--start_frame [int(1)] 视频序列的起始帧号\n
+///--end_frame [int] 视频序列的结束帧号\n
+///--nz [int(4)] 序列编号有几位\n
+///--ext [string(jpg)] 序列格式\n
+///--initx [double] 目标起始位置x\n
+///--inity [double] 目标起始位置y\n
+///--initw [double] 目标起始大小width\n
+///--inith [double] 目标起始大小height\n
+///--rw_ratio [double(0.5)] 运动模型中随机游走所占的比例，即论文中的参数alpha\n
+///--binL [int(16)] 特征中L通道直方图的bin，实验中设为32\n
+///--binU [int(16)] 特征中U通道直方图的bin，实验中设为32\n
+///--binV [int(4)] 特征中V通道直方图的bin，实验中设为16\n
+///--binHOG [int(6)] 特征中梯度方向直方图的bin，实验中设为12\n
+///--init_prob [int(5)] 初始时刻模板池个数，不建议改动\n
+///--cur_prob [int(3)] 当前时刻模板池个数，实验中设为2\n
 int main(int argc, char** argv)
 {
 	using namespace cv;
@@ -33,7 +72,7 @@ int main(int argc, char** argv)
 		("learning_rate,l", value<double>()->default_value(0.4), "re-id model learning rate")
 		("sigma_x,x", value<double>()->default_value(20), "sigma of x")
 		("sigma_y,y", value<double>()->default_value(10), "sigma of y")
-		("sigma_w,s", value<double>()->default_value(8), "sigma of width")
+		("sigma_w,s", value<double>()->default_value(5), "sigma of width")
 		("exp_coeff_re_id,e", value<double>()->default_value(0.5), "exp coefficient of re-id distance")
 		("re-id_weight,w", value<double>()->default_value(0.8), "weight of re-id in observation model")
 		("hog_particle_expand,d", value<double>()->default_value(1.4), "hog particle expand")
@@ -148,9 +187,9 @@ int main(int argc, char** argv)
 		if (vm.count("cur_probe"))
 			cur_probe = vm["cur_probe"].as<int>();
 
-		ofstream result_file(seq_name+"_PF.txt");
+		ofstream result_file(seq_name+"_PF.txt");		///< 跟踪结果将写入文件，便于matlab分析
 		result_file << initx << "	" << inity << "	" << initw << "	" << inith << endl;
-		ofstream fps_file(seq_name+"_PF_FPS.txt");
+		ofstream fps_file(seq_name+"_PF_FPS.txt");		///< 帧率
 		PTUsingReIdandPF tracker(5, particles, use_optical_flow_lk, update_online, learning_rate, sigmax, sigmay, sigmaw, exp_coeff_re_id, re_id_weight, hog_particle_expand, thread_num, aspect_ratio, rwr, binL, binU, binV, binHOG, init_probe, cur_probe);
 
 		cv::Rect initialization(initx, inity, initw, inith);
@@ -182,11 +221,11 @@ int main(int argc, char** argv)
 			cv::Rect rect = tracker.track(image);
 			result_file << rect.x << "	" << rect.y << "	" << rect.width << "	" << rect.height << endl;
 
-			//cv::rectangle(image, rect, cv::Scalar(0, 0, 255), 2);
-			//cv::imshow("result", image);
-			//char k = cv::waitKey(0);
-			//if (k=='q') return 0;
-			//if (k=='p') cv::waitKey(0);
+			cv::rectangle(image, rect, cv::Scalar(0, 0, 255), 2);
+			cv::imshow("result", image);
+			char k = cv::waitKey(5);
+			if (k=='q') return 0;
+			if (k=='p') cv::waitKey(0);
 #ifdef SAVE_IMAGE
 			stringstream ss1;
 			ss1 << setfill('0') << setw(nz) << i;

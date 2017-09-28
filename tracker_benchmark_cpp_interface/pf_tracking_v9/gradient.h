@@ -1,3 +1,7 @@
+/// @file gradient.h
+/// @brief ≤Œ’’Piotr's Computer Vision Matlab Toolbox Õ¯÷∑£∫https://pdollar.github.io/toolbox/
+/// @date 2017-9-27
+
 #ifndef __GRADIENT__
 #define __GRADIENT__
 

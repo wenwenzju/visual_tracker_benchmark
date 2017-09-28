@@ -1,3 +1,9 @@
+/// @file wwmatrix.hpp
+/// @brief 很好用的矩阵类，用于opencv的Mat与Piotr's Computer Vision Matlab Toolbox工具箱接口的兼容性过渡
+/// @author 王文
+/// @version 8.0
+/// @date 2017-9-27
+
 #ifndef __WWMATRIX__
 #define __WWMATRIX__
 

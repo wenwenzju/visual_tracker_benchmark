@@ -1,3 +1,8 @@
+/// @file timer.h
+/// @brief 可以像matlab的tic toc那样使用的计时工具
+/// @version 8.0
+/// @date 2017-9-27
+
 #ifndef TIMER_H
 #define TIMER_H
 

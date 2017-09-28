@@ -1,3 +1,7 @@
+/// @file convConst.h
+/// @brief ≤Œ’’Piotr's Computer Vision Matlab Toolbox Õ¯÷∑£∫https://pdollar.github.io/toolbox/
+/// @date 2017-9-27
+
 /*******************************************************************************
 * Piotr's Computer Vision Matlab Toolbox      Version 3.24
 * Copyright 2014 Piotr Dollar & Ron Appel.  [pdollar-at-gmail.com]

@@ -1,3 +1,9 @@
+/// @file particle_filter.cpp
+/// @brief 粒子滤波的接口类定义，详见 particle_filter.h
+/// @author 王文
+/// @version 8.0
+/// @date 2017-9-27
+
 #include "particle_filter.h"
 
 void ParticleFilter::filter(vec_d& yk, vec_d& xk, int resample_strategy)
@@ -8,24 +14,27 @@ void ParticleFilter::filter(vec_d& yk, vec_d& xk, int resample_strategy)
 	static bool is_first = true;
 	if (is_first)
 	{
-		for (int i = 0; i < particles_num_; ++i)
-		{
-			vec_d xkm1_i;
-			gen_x0(xkm1_i);
-			xkm1_.push_back(xkm1_i);
-		}
-		wkm1_ = vec_d(particles_num_, 1./particles_num_);
+		//for (int i = 0; i < particles_num_; ++i)
+		//{
+		//	vec_d xkm1_i;
+		//	gen_x0(xkm1_i);
+		//	xkm1_.push_back(xkm1_i);
+		//}
+		//wkm1_ = vec_d(particles_num_, 1./particles_num_);
+		//is_first = false;
+		gen_x0(xkm1_, wkm1_);
 		is_first = false;
 	}
 
-	for (int i = 0; i < particles_num_; ++i)
-	{
-		vec_d xk_i;			//i_th particle
-		sample_from_q(xkm1_[i], yk, 1, xk_i);
-		xk_.push_back(xk_i);
-		//wk_.push_back(update_weight(wkm1_[i], xkm1_[i], xk_i, yk));
-		//s += wk_[i];
-	}
+	//for (int i = 0; i < particles_num_; ++i)
+	//{
+	//	vec_d xk_i;			//i_th particle
+	//	sample_from_q(xkm1_[i], yk, i, xk_i);
+	//	xk_.push_back(xk_i);
+	//	//wk_.push_back(update_weight(wkm1_[i], xkm1_[i], xk_i, yk));
+	//	//s += wk_[i];
+	//}
+	sample_from_q(xkm1_, xk_);
 
 	update_weight(wkm1_, xkm1_, xk_, yk, wk_);
 	for (int i = 0; i < particles_num_; ++i) s += wk_[i];
@@ -37,9 +46,14 @@ void ParticleFilter::filter(vec_d& yk, vec_d& xk, int resample_strategy)
 		*b = *b/s;
 		ss += (*b * *b);
 	}
+
 	double neff = 1./ss;
-	//if (neff < 0.5*particles_num_)
-	//	resample_(xk_, wk_, resample_strategy);
+	if (neff < 0.5*particles_num_)
+	{resample_(xk_, wk_, resample_strategy);whether_resample = true;}
+	else whether_resample = false;
+	//resample_(xk_, wk_, resample_strategy);
+
+	/*weighted average*/
 	xk.clear();
 	for (int i = 0; i < states_num_; ++i)
 	{
@@ -48,6 +62,47 @@ void ParticleFilter::filter(vec_d& yk, vec_d& xk, int resample_strategy)
 			statei += wk_[j]*xk_[j][i];
 		xk.push_back(statei);
 	}
+
+	/*nms*/
+	//bbNms(xk_, wk_, xk, 0.8);
+
+	/*median*/
+	//sort_particles(xk_, wk_, sorted_particles);
+	//if (particles_num_%2)
+	//{
+	//	for (int i = 0; i < states_num_; ++i)
+	//		xk.push_back((sorted_particles[particles_num_/2][i]+sorted_particles[particles_num_/2-1][i])/2);
+	//}
+	//else
+	//{
+	//	for (int i = 0; i < states_num_; ++i)
+	//		xk.push_back(sorted_particles[particles_num_/2][i]);
+	//}
+
+	//double statei = -FLT_MAX;
+	//int idx = -1;
+	//for (int j = 0; j < particles_num_; ++j)
+	//	statei < wk_[j] ? (statei = wk_[j], idx = j):idx = idx;
+	//xk = xk_[idx];
+
+	/*first n average*/
+	//std::vector<vec_d> sorted_particles;
+	//sort_particles(xk_, wk_, sorted_particles);
+	//int firstn = 10, l = sorted_particles[0].size();double sw = 0;
+	//std::for_each(sorted_particles.begin(), sorted_particles.begin()+firstn,[&sw,l](vec_d& v){sw+=v[l-1];});
+	//std::for_each(sorted_particles.begin(), sorted_particles.begin()+firstn,[sw,l](vec_d& v){v[l-1]/=sw;});
+	//xk.clear();
+	//for (int i = 0; i < states_num_; ++i)
+	//{
+	//	double statei = 0.;
+	//	for (int j = 0; j < firstn; ++j)
+	//		statei += sorted_particles[j][l-1]*sorted_particles[j][i];
+	//	xk.push_back(statei);
+	//}
+
+	//n-sigma
+	//calc_average(xk_, wk_, xk);
+
 	swap(wk_, wkm1_);
 	swap(xk_, xkm1_);
 }

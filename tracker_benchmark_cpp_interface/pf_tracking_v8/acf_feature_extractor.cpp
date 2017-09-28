@@ -1,3 +1,12 @@
+/// @file acf_feature_extractor.cpp
+/// @brief 特征提取封装，特征包括LUV色彩空间的直方图、梯度方向直方图\n
+/// 特征的计算使用Piotr's Computer Vision Matlab Toolbox提供的接口：convConst.h convConst.cpp gradient.h gradient.cpp rgbConvert.hpp sse.hpp wrappers.hpp wrappers.cpp\n
+/// 网址：https://pdollar.github.io/toolbox/ \n
+/// 详见 acf_feature_extractor.h\n
+/// @author 王文
+/// @version 8.0
+/// @date 2017-9-27
+
 #include "acf_feature_extractor.h"
 
 #define SHRINK 1
@@ -157,7 +166,7 @@ double AcfFeatureExtractor::bhattacharyya(double* d1, double* d2, int len, bool 
 }
 
 #define INIT_PROBE_STEP 3
-void AcfFeatureExtractor::update_match_model(cv::Rect& roi, int flag /* = 0 */)
+void AcfFeatureExtractor::update_match_model(cv::Rect& roi)
 {
 	static int cnt = 0;
 	MatchModel mmroi;

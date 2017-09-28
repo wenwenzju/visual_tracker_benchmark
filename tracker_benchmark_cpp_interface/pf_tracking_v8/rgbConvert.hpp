@@ -1,3 +1,7 @@
+/// @file rgbConvert.h
+/// @brief ≤Œ’’Piotr's Computer Vision Matlab Toolbox Õ¯÷∑£∫https://pdollar.github.io/toolbox/
+/// @date 2017-9-27
+
 #ifndef __RGBCONVERT__
 #define __RGBCONVERT__
 

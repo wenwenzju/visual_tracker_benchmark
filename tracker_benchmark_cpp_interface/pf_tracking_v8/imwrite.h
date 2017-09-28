@@ -1,3 +1,9 @@
+/// @file imwrite.h
+/// @brief 用来保存图像，第一次调用时新建一个以当前时间命名的文件夹，随后每调用一次，则将图像保存在该文件夹中，命名为n.jpg
+/// @author 王文
+/// @version 8.0
+/// @date 2017-9-27
+
 #ifndef _IMWRITE_H_
 #define _IMWRITE_H_
 

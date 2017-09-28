@@ -1,9 +1,14 @@
+/// @file tracking_using_re_id_and_pf.cpp
+/// @brief 基于粒子滤波的行人跟踪，详见tracking_using_re_id_and_pf.h
+/// @author 王文
+/// @version 9.0
+/// @date 2017-9-27
+
 #include "tracking_using_re_id_and_pf.h"
 #include "imwrite.h"
 
-#define USE_WEIGHTED_AVERAGE_TEMPLATE
 //#define SHOW_EACH_PARTICLE
-#define USE_SPATIAL
+#define USE_SPATIAL			///< 注释之后特征提取时模板不会分成网格，即分成1x1的网格
 
 PTUsingReIdandPF::PTUsingReIdandPF(const std::string& des, int states, int particles) : ParticleFilter(states, particles), acf_extractor(), /*rng(time(0)),*/ no_matched_orb(false),
 	termcrit_(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.03), sub_pix_winSize(10,10), win_size(31,31), MAX_COUNT(500)
@@ -173,7 +178,6 @@ double PTUsingReIdandPF::p_xk_given_xkm1(vec_d& xkm1, vec_d& xk)
 void PTUsingReIdandPF::p_yk_given_xk_multi_thread(std::vector<vec_d>::iterator& s_xk, 
 	std::vector<double>::iterator& s_item0, 
 	std::vector<double>::iterator& s_item1, 
-	double* si0, double* si1, 
 	int particles_per_thread)
 {
 	for (int i = 0; i < particles_per_thread; s_xk++, s_item0++, s_item1++, i++)
@@ -225,7 +229,6 @@ void PTUsingReIdandPF::p_yk_given_xk(std::vector<vec_d>& xk, vec_d& yk, std::vec
 	int pn = xk.size();
 	std::vector<double> item0(pn, 0), item1(pn, 0);
 	pro = std::vector<double>(pn, 0.);
-	double si0 = 0., si1 = 0.;
 	std::vector<double> ds;
 
 	int particles_per_thread = particles_num_ / thread_num_;
@@ -241,11 +244,11 @@ void PTUsingReIdandPF::p_yk_given_xk(std::vector<vec_d>& xk, vec_d& yk, std::vec
 
 		if (i != thread_num_-1)
 			threads[i] = boost::thread(boost::bind(&PTUsingReIdandPF::p_yk_given_xk_multi_thread, this, 
-			s_xk, s_item0, s_item1, &si0, &si1, particles_per_thread));
+			s_xk, s_item0, s_item1, particles_per_thread));
 		else
 		{
 			threads[i] = boost::thread(boost::bind(&PTUsingReIdandPF::p_yk_given_xk_multi_thread, this, 
-				s_xk, s_item0, s_item1, &si0, &si1, particles_per_thread+particles_num_%thread_num_));
+				s_xk, s_item0, s_item1, particles_per_thread+particles_num_%thread_num_));
 		}
 	}
 
@@ -548,42 +551,6 @@ void PTUsingReIdandPF::drawMatches(cv::Mat& img1, std::vector<cv::Point2f>& poin
 	}
 }
 
-void PTUsingReIdandPF::re_id_model_update(pe_re_id::SdalfFeature& sf1, pe_re_id::SdalfFeature& sf2/*new*/, pe_re_id::SdalfFeature& sf3/*output updated*/, double alpha)
-{
-	CV_Assert(alpha <= 1. && alpha >= 0.);
-	sf3.mapkrnl_div3.BUsim = (1-alpha)*sf1.mapkrnl_div3.BUsim+alpha*sf2.mapkrnl_div3.BUsim;
-	sf3.mapkrnl_div3.HDanti = (1-alpha)*sf1.mapkrnl_div3.HDanti+alpha*sf2.mapkrnl_div3.HDanti;
-	sf3.mapkrnl_div3.head_det = sf1.mapkrnl_div3.head_det;
-	sf3.mapkrnl_div3.head_det_flag = sf1.mapkrnl_div3.head_det_flag;
-	sf3.mapkrnl_div3.is_ready = sf1.mapkrnl_div3.is_ready;
-	sf3.mapkrnl_div3.LEGsim = (1-alpha)*sf1.mapkrnl_div3.LEGsim+alpha*sf2.mapkrnl_div3.LEGsim;
-	sf3.mapkrnl_div3.TLanti = (1-alpha)*sf1.mapkrnl_div3.TLanti+alpha*sf2.mapkrnl_div3.TLanti;
-	
-	sf3.whisto2.is_ready = sf1.whisto2.is_ready;
-	sf3.whisto2.whisto = (1-alpha)*sf1.whisto2.whisto+alpha*sf2.whisto2.whisto;
-}
-
-void PTUsingReIdandPF::re_id_model_update(pe_re_id::SdalfFeature& sf, std::vector<pe_re_id::SdalfFeature>& p)
-{
-#ifdef USE_WEIGHTED_AVERAGE_TEMPLATE
-	static std::vector<pe_re_id::SdalfFeature> history_probe(probe_needs_+1);
-	static int cnt = 1;
-	if (cnt == 1) {history_probe[0] = p[0];history_probe[1] = sf; cnt++;}
-	else if (cnt <= probe_needs_) {history_probe[cnt] = sf; cnt++;}
-	else {history_probe.erase(history_probe.begin()+1); history_probe.push_back(sf);}
-	if (p.size() == 1) p.push_back(history_probe[0]);
-	p[1].whisto2.whisto = cv::Mat::zeros(p[0].whisto2.whisto.size(), p[0].whisto2.whisto.type());
-	for (int i = 0; i < cnt; ++i)
-	{
-		p[1].whisto2.whisto = p[1].whisto2.whisto + get_weight_(i,cnt)*history_probe[i].whisto2.whisto;
-		std::cout << get_weight_(i, cnt) << " ";
-	}
-	std::cout << std::endl;
-#else
-	if (p.size() < probe_needs_) p.push_back(sf);
-	else {p.erase(p.begin()+1); p.push_back(sf);}
-#endif
-}
 double PTUsingReIdandPF::get_weight_(int i, int n)
 {
 	if (i == 0) return 1-learning_rate_;
@@ -658,39 +625,6 @@ cv::Rect PTUsingReIdandPF::get_particles_bounding_box(std::vector<vec_d>::iterat
 	return cv::Rect(minx, miny, maxx-minx+1, maxy-miny+1);
 }
 
-#define SCALE_GAUSSIAN_NOISE_VARIANCE 5
-void PTUsingReIdandPF::fpt_motion_update(vec_d& particle_pre, vec_d& particle_cur, double meanx, double meany)
-{
-	double xtmp = particle_pre[0] + meanx;
-	if (xtmp < 0)
-		particle_cur[0] = xtmp+gen_uniform_noise(0,width_star_/2);
-	else if (xtmp > pre_frame.cols)
-		particle_cur[0] = xtmp-gen_uniform_noise(0, width_star_/2);
-	else
-		particle_cur[0] = xtmp+gen_gaussian_noise(0,2);
-	if (particle_cur[0] < 0) particle_cur[0] = 0;
-	else if (particle_cur[0] > pre_frame.cols) particle_cur[0] = pre_frame.cols;
-
-	double ytmp = particle_pre[1] + meany;
-	if (ytmp < 0)
-		particle_cur[1] = ytmp+gen_uniform_noise(0,width_star_/2/aspect_ratio_);
-	else if (ytmp > pre_frame.rows)
-		particle_cur[1] = ytmp-gen_uniform_noise(0,width_star_/2/aspect_ratio_);
-	else
-		particle_cur[1] = ytmp+gen_gaussian_noise(0,2);
-	if (particle_cur[1] < 0) particle_cur[1] = 0;
-	else if (particle_cur[1] > pre_frame.rows) particle_cur[1] = pre_frame.rows;
-
-	particle_cur[2] = particle_pre[2] + gen_gaussian_noise(0,width_star_/6);
-	if (particle_cur[2] < 10) particle_cur[2] = 10;
-	else if (particle_cur[2]/aspect_ratio_ > pre_frame.rows) particle_cur[2] = pre_frame.rows*aspect_ratio_;
-	//particle_cur[3] = particle_cur[0]-particle_pre[0]+gen_gaussian_noise(0,width_star_/4);
-	//particle_cur[4] = particle_cur[1] - particle_pre[1]+gen_gaussian_noise(0, width_star_/4);
-	//particle_cur[3] = meanx + gen_gaussian_noise(0, width_star_/4);
-	particle_cur[3] = gen_gaussian_noise(0, 1);
-	//particle_cur[4] = meany + gen_gaussian_noise(0, width_star_/4);
-	particle_cur[4] = gen_gaussian_noise(0, 1);
-}
 void PTUsingReIdandPF::rw_motion_update(vec_d& particle_pre, vec_d& particle_cur, double w_star, double vx_star, double vy_star, int frame_w, int frame_h)
 {
 	double xtmp = particle_pre[0]+particle_pre[3];
